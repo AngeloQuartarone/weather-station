@@ -17,17 +17,17 @@ This repository contains the code for a simple weather station using an ESP32 bo
 
 ### Setup
 1. Hardware Connections:
-  - Connect the DHT11 sensor to pin 25
-  - Connect the BMP085 sensor to the I2C bus (usually SDA and SCL pins)
-  - Connect the solar power manager control pin to pin 27
+    - Connect the DHT11 sensor to pin 25
+    - Connect the BMP085 sensor to the I2C bus (usually SDA and SCL pins)
+    - Connect the solar power manager control pin to pin 27
 2. Wi-Fi Configuration:
-  - Replace `SECRET_SSID` and `SECRET_PASS` in `secrets.h` with your Wi-Fi credentials
+    - Replace `SECRET_SSID` and `SECRET_PASS` in `secrets.h` with your Wi-Fi credentials
 3. Server Configuration:
-  - Update the `host` and `port` variables in the code with your server’s IP address and port
+    - Update the `host` and `port` variables in the code with your server’s IP address and port
 4. Power Management:
-  - The system is configured to enter deep sleep for 5 minutes (`300 seconds`) after each data transmission. You can adjust the sleep interval by modifying the value in `esp_sleep_enable_timer_wakeup(300 * uS_TO_S_FACTOR);`
+    - The system is configured to enter deep sleep for 5 minutes (`300 seconds`) after each data transmission. You can adjust the sleep interval by modifying the value in `esp_sleep_enable_timer_wakeup(300 * uS_TO_S_FACTOR);`
 5. Compile and Upload:
-  - Use the Arduino IDE or similar to compile and upload the code to your board
+    - Use the Arduino IDE or similar to compile and upload the code to your board
 
 ### How It Works
 1. On startup, the Arduino connects to the specified Wi-Fi network
