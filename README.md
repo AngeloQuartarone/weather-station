@@ -7,6 +7,7 @@ This repository contains the code for a simple weather station using an ESP32 bo
 - **Pressure**: Uses an Adafruit BMP085 sensor to measure atmospheric pressure
 - **Wi-Fi Communication**: Connects to a Wi-Fi network and sends data to a specified server
 - **Power Management**: Integrates with a solar power manager and enters deep sleep mode to conserve energy
+- **Server Integration**: The project is currently configured to communicate with a server that processes all received data and makes it available to the user via a Telegram bot
 
 ### Hardware Requirements
 - Arduino board or similar
