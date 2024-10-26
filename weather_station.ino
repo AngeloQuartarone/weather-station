@@ -1,63 +1,91 @@
 #include <Arduino.h>
+#include "time.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <DHT11.h>
 #include <Adafruit_BMP085.h>
+#include <ArduinoMqttClient.h>
 #include "secrets.h"
-
-const uint16_t port = 8080;
-const char* host = "192.168.1.33";
 
 #define DHT_SENSOR_PIN 25
 #define DFROBOT_PWR_PIN 27
+#define BUZZER_PIN 33
 #define uS_TO_S_FACTOR 1000000
+
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
 
 DHT11 dht11(DHT_SENSOR_PIN);
 Adafruit_BMP085 bmp;
 
+const char* ntpServer = "pool.ntp.org";  // NTP server
+const long gmtOffset_sec = 3600;         // Offset orario per il tuo fuso orario (esempio per GMT+1)
+const int daylightOffset_sec = 3600;     // Offset per l'ora legale, se applicabile
+
 void setup() {
   Serial.begin(9600);
-  
+  int tryCount = 0;
+
   // Setup pins
   pinMode(DHT_SENSOR_PIN, INPUT);
   pinMode(DFROBOT_PWR_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 
-  // Initialize the DHT11 sensor
+  tone(BUZZER_PIN, 988,100);
+  delay(200);
+  tone(BUZZER_PIN, 988,100);
+  delay(200);
+
+
+
+  // Power up DHT11 sensor
   digitalWrite(DFROBOT_PWR_PIN, HIGH);
 
-  // Setup deep sleep to wake up after 300 seconds (5 minutes)
-  esp_sleep_enable_timer_wakeup(300 * uS_TO_S_FACTOR);
+  // Setup deep sleep to wake up after 15 minutes
+  esp_sleep_enable_timer_wakeup(900 * uS_TO_S_FACTOR);
 
   // Initialize BMP085 sensor
-  if (!bmp.begin()) {
-    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
-    digitalWrite(DFROBOT_PWR_PIN, LOW);
-    esp_deep_sleep_start();
+  tryCount = 0;
+  while (!bmp.begin()) {
+    tryCount++;
+    countCheck(tryCount, 10);
   }
 
   // Connect to Wi-Fi
+  tryCount = 0;
   WiFi.begin(SECRET_SSID, SECRET_PASS);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.println("Connecting to WiFi...");
+    tryCount++;
+    countCheck(tryCount, 10);
   }
-  Serial.print("WiFi connected with IP: ");
-  Serial.println(WiFi.localIP());
+  //Serial.print("WiFi connected with IP: ");
+  //Serial.println(WiFi.localIP());
 
-  // Connect to the server
-  WiFiClient client;
-  while (!client.connect(host, port)) {
-    Serial.println("Connection to host failed");
-    delay(500);
+
+  // Create timestamp
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  char locTime[64];
+  tryCount = 0;
+  while (!getLocalTime(&timeinfo)) {
+    tryCount++;
+    countCheck(tryCount, 10);
   }
-  Serial.println("Connected to server successfully!");
+  strftime(locTime, sizeof(locTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
-  // Read sensor data
+  // Connect to MQTT broker
+  mqttClient.setUsernamePassword(MQTT_USER, MQTT_PASS);
+  tryCount = 0;
+  while (!mqttClient.connect(BROKER, MQTTPORT)) {
+    tryCount++;
+    countCheck(tryCount, 10);
+  }
+
   int temperature = dht11.readTemperature();
   int humidity = dht11.readHumidity();
   int pressure = bmp.readPressure();
 
-  // Check for sensor errors
+  // Check sensors errors
   if (temperature == DHT11::ERROR_TIMEOUT || temperature == DHT11::ERROR_CHECKSUM) {
     temperature = -1;
   }
@@ -66,19 +94,33 @@ void setup() {
   }
 
   // Send data to the server
-  String data = "T:" + String(temperature) + "/H:" + String(humidity) + "/P:" + String(pressure);
-  client.print(data);
-  
-  // Print server response
-  String response = client.readStringUntil('\0');
-  Serial.println(response);
+  String data = "Time:" + String(locTime) + "/T:" + String(temperature) + "/H:" + String(humidity) + "/P:" + String(pressure);
+  mqttClient.beginMessage(TOPIC);
+  mqttClient.print(data);
+  mqttClient.endMessage();
+  mqttClient.stop();
+  delay(2000);
 
   // Disconnect and enter deep sleep
-  Serial.println("Disconnecting...");
-  client.stop();
   digitalWrite(DFROBOT_PWR_PIN, LOW);
-  Serial.flush();
   esp_deep_sleep_start();
+}
+
+void countCheck(int tryCount, int n){
+  if(tryCount == n){
+  for(int i = 0; i < 10; i++){
+    tone(BUZZER_PIN, 988,100);
+    delay(200);
+    tone(BUZZER_PIN, 988,100);
+    delay(200);
+  }
+    digitalWrite(DFROBOT_PWR_PIN, LOW);
+    esp_deep_sleep_start();
+  }
+  else{
+    delay(1000); 
+  }
+  return;
 }
 
 void loop() {
