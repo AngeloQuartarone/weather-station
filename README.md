@@ -1,4 +1,4 @@
-# weather-station
+# weather-station-esp32
 
 This repository contains the code for a simple weather station using an ESP32 board. The station collects temperature, humidity, and pressure data and sends it to a remote server. The system is designed to operate efficiently with minimal power consumption, making it suitable for solar-powered applications.
 
