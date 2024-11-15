@@ -17,9 +17,6 @@
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
 
-WiFiClient wifiClient;
-MqttClient mqttClient(wifiClient);
-
 DHT11 dht11(DHT_SENSOR_PIN);
 Adafruit_BMP085 bmp;
 
