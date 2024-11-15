@@ -1,17 +1,14 @@
 #include <Arduino.h>
 #include "time.h"
-#include "time.h"
 #include <WiFi.h>
 #include <WiFiClient.h>
 #include <DHT11.h>
 #include <Adafruit_BMP085.h>
 #include <ArduinoMqttClient.h>
-#include <ArduinoMqttClient.h>
 #include "secrets.h"
 
 #define DHT_SENSOR_PIN 25
 #define DFROBOT_PWR_PIN 27
-#define BUZZER_PIN 33
 #define uS_TO_S_FACTOR 1000000
 
 WiFiClient wifiClient;
@@ -38,16 +35,7 @@ void setup() {
   // Setup pins
   pinMode(DHT_SENSOR_PIN, INPUT);
   pinMode(DFROBOT_PWR_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
 
-  tone(BUZZER_PIN, 988,100);
-  delay(200);
-  tone(BUZZER_PIN, 988,100);
-  delay(200);
-
-
-
-  // Power up DHT11 sensor
   // Power up DHT11 sensor
   digitalWrite(DFROBOT_PWR_PIN, HIGH);
 
@@ -59,46 +47,17 @@ void setup() {
   while (!bmp.begin()) {
     tryCount++;
     countCheck(tryCount, 10);
-  tryCount = 0;
-  while (!bmp.begin()) {
-    tryCount++;
-    countCheck(tryCount, 10);
   }
 
   // Connect to Wi-Fi
-  tryCount = 0;
   tryCount = 0;
   WiFi.begin(SECRET_SSID, SECRET_PASS);
   while (WiFi.status() != WL_CONNECTED) {
     tryCount++;
     countCheck(tryCount, 10);
-    tryCount++;
-    countCheck(tryCount, 10);
   }
   //Serial.print("WiFi connected with IP: ");
   //Serial.println(WiFi.localIP());
-  //Serial.print("WiFi connected with IP: ");
-  //Serial.println(WiFi.localIP());
-
-
-  // Create timestamp
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  struct tm timeinfo;
-  char locTime[64];
-  tryCount = 0;
-  while (!getLocalTime(&timeinfo)) {
-    tryCount++;
-    countCheck(tryCount, 10);
-  }
-  strftime(locTime, sizeof(locTime), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-  // Connect to MQTT broker
-  mqttClient.setUsernamePassword(MQTT_USER, MQTT_PASS);
-  tryCount = 0;
-  while (!mqttClient.connect(BROKER, MQTTPORT)) {
-    tryCount++;
-    countCheck(tryCount, 10);
-  }
 
 
   // Create timestamp
@@ -125,7 +84,6 @@ void setup() {
   int pressure = bmp.readPressure();
 
   // Check sensors errors
-  // Check sensors errors
   if (temperature == DHT11::ERROR_TIMEOUT || temperature == DHT11::ERROR_CHECKSUM) {
     temperature = -1;
   }
@@ -134,12 +92,6 @@ void setup() {
   }
 
   // Send data to the server
-  String data = "Time:" + String(locTime) + "/T:" + String(temperature) + "/H:" + String(humidity) + "/P:" + String(pressure);
-  mqttClient.beginMessage(TOPIC);
-  mqttClient.print(data);
-  mqttClient.endMessage();
-  mqttClient.stop();
-  delay(2000);
   String data = "Time:" + String(locTime) + "/T:" + String(temperature) + "/H:" + String(humidity) + "/P:" + String(pressure);
   mqttClient.beginMessage(TOPIC);
   mqttClient.print(data);
@@ -166,3 +118,4 @@ void countCheck(int tryCount, int n){
 void loop() {
   // No code needed here as the device sleeps after setup
 }
+
